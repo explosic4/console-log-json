@@ -105,6 +105,20 @@ declare global {
   }
 }
 
+const timestampkey = 'time';
+function getPinoLevel(level: string = 'info'): number {
+  const pinoLevelNumber = {
+    error: 50,
+    warn: 40,
+    info: 30,
+    http: 20,
+    verbose: 20,
+    debug: 20,
+    silly: 10,
+  };
+  return pinoLevelNumber[level as keyof typeof pinoLevelNumber] || pinoLevelNumber.info;
+}
+
 export function FormatErrorObject(object: any) {
   let returnData: any = object;
   const { CONSOLE_LOG_JSON_NO_NEW_LINE_CHARACTERS, CONSOLE_LOG_JSON_NO_NEW_LINE_CHARACTERS_EXCEPT_STACK } = process.env;
@@ -156,13 +170,13 @@ export function FormatErrorObject(object: any) {
   if (returnData.level) {
     const savedLogLevel = returnData.level;
     delete returnData.level;
-    returnData = { level: savedLogLevel, ...returnData };
+    returnData = { level: getPinoLevel(savedLogLevel), ...returnData };
   }
 
   // Add timestamp
   const { CONSOLE_LOG_JSON_NO_TIME_STAMP } = process.env;
   if (!(CONSOLE_LOG_JSON_NO_TIME_STAMP && CONSOLE_LOG_JSON_NO_TIME_STAMP.toLowerCase() === 'true')) {
-    returnData['@timestamp'] = new Date().toISOString();
+    returnData[timestampkey] = Date.now();
   }
 
   // cleanup leading dash in message
@@ -497,7 +511,7 @@ function supressDetailsIfSelected(errorObject: ErrorWithContext | undefined) {
   const { CONSOLE_LOG_JSON_NO_PACKAGE_NAME } = process.env;
   const { CONSOLE_LOG_JSON_NO_LOGGER_DEBUG } = process.env;
 
-  if (errorObject == undefined) {
+  if (errorObject === undefined) {
     return undefined;
   }
 
@@ -625,10 +639,10 @@ function extractParametersFromArguments(args: any[]) {
   });
 
   // if we have extra context we must either wrap it into an existing error object or, pass it dry
-  if (extraContext != undefined) {
+  if (extraContext !== undefined) {
     // noinspection JSUnusedAssignment
     extraContext = sortObject(extraContext);
-    if (errorObject == undefined) {
+    if (errorObject === undefined) {
       errorObjectWasPassed = false;
       // pass it dry
       errorObject = extraContext as any;
