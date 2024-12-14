@@ -4,9 +4,9 @@
 .env*
 
 # compiled output
-dist/
+# dist/
 tmp/
-out-tsc/
+# out-tsc/
 
 # dependencies
 node_modules/
